@@ -11,7 +11,7 @@ pipeline {
     stages {
         stage('Prepare Workspace') {
             steps {
-                sh 'chmod -R 777 /var/lib/jenkins/workspace/website-automation'
+                sh 'ls -la'
             }
         }
     }
