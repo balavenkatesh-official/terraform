@@ -42,6 +42,41 @@ pipeline {
                     """
                 }
             }
-        }            
-}
+        }
+
+        stage('Terraform Init and Apply') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform init'
+                    sh 'terraform apply --auto-approve'
+                }
+            }
+        }
+
+        stage('Save Outputs') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform output > output.txt'
+                    sh 'mv -v output.txt ..'
+                }
+            }
+        }  
+
+        stage('Terraform Destroy') {
+            when {
+                expression { params.DESTROY_INFRA }
+            }
+            steps {
+                dir('terraform') {
+                    sh 'terraform destroy --auto-approve'
+                }
+            }
+        }
+   }
+   post {
+        always {
+            archiveArtifacts artifacts: 'output.txt', allowEmptyArchive: true
+        }
+    }
+
 }
