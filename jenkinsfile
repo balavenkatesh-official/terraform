@@ -15,7 +15,7 @@ pipeline {
     }
 
     stages {
-           stage('Ensure .env File') {
+        stage('Ensure .env File') {
             steps {
                 script {
                     writeFile file: '.env', text: """
@@ -27,6 +27,28 @@ pipeline {
                     echo "Contents of .env file:\n${envContent}"
                 }
             }
+        }
+        stage('Create Credentials File') {
+            steps {
+                sh '''
+                    #!/bin/bash
+
+                    # Define environmental variables
+                    ACCESS_KEY="${ACCESS_KEY}"
+                    SECRET_KEY="${SECRET_KEY}"
+                    PROJECT_NAME="${PROJECT_NAME}"
+
+                    # Create the file and write the values to it
+                    cat <<EOF > credentials.txt
+                    ACCESS_KEY=${ACCESS_KEY}
+                    SECRET_KEY=${SECRET_KEY}
+                    PROJECT_NAME=${PROJECT_NAME}
+                    EOF
+
+                    # Display the contents of the file
+                    cat credentials.txt
+                '''
+               }
         }
         stage('Prepare Workspace') {
             when {
@@ -101,11 +123,20 @@ pipeline {
             }
             steps {
                 dir('terraform') {
-                    sh """
-                        sed -i "s|ACCESSKEY|${env.ACCESS_KEY}|g" input.tf
-                        sed -i "s|SECRETKEY|${env.SECRET_KEY}|g" input.tf
-                    """
-                    sh 'terraform destroy --auto-approve'
+                    sh '''
+                        #!/bin/bash
+
+                        # Define environmental variables
+                        ACCESS_KEY="${ACCESS_KEY}"
+                        SECRET_KEY="${SECRET_KEY}"
+
+                        # Use sed to replace placeholders in the input.tf file
+                        sed -i "s|ACCESSKEY|${ACCESS_KEY}|g" input.tf
+                        sed -i "s|SECRETKEY|${SECRET_KEY}|g" input.tf
+
+                        # Destroy the Terraform infrastructure
+                        terraform destroy --auto-approve
+                    '''
                 }
             }
         }
