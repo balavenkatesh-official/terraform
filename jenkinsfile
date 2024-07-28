@@ -8,6 +8,12 @@ pipeline {
         booleanParam(name: 'DESTROY_INFRA', defaultValue: false, description: 'Set to true to destroy the infrastructure')
     }
 
+    environment {
+        ACCESS_KEY = "${params.Access_key}"
+        SECRET_KEY = "${params.Secret_key}"
+        PROJECT_NAME = "${params.project_name}"
+    }
+
     stages {
         stage('Prepare Workspace') {
             when {
@@ -18,14 +24,13 @@ pipeline {
             }
         }
     
-
         stage('Generate SSH Key') {
             when {
                 expression { !params.DESTROY_INFRA }
             }
             steps {
                 script {
-                    def project_name = params.project_name
+                    def project_name = env.PROJECT_NAME
                     sh """
                         ssh-keygen -t rsa -b 4096 -C "" -N '' -f ${project_name}
                         mv -v ${project_name} ${project_name}.pem
@@ -46,8 +51,8 @@ pipeline {
             steps {
                 script {
                     sh """
-                        sed -i "s|ACCESSKEY|${params.Access_key}|g" terraform/input.tf
-                        sed -i "s|SECRETKEY|${params.Secret_key}|g" terraform/input.tf
+                        sed -i "s|ACCESSKEY|${env.ACCESS_KEY}|g" terraform/input.tf
+                        sed -i "s|SECRETKEY|${env.SECRET_KEY}|g" terraform/input.tf
                     """
                 }
             }
@@ -75,7 +80,7 @@ pipeline {
                     sh 'mv -v output.txt ..'
                 }
             }
-        }  
+        }
 
         stage('Terraform Destroy') {
             when {
@@ -83,15 +88,19 @@ pipeline {
             }
             steps {
                 dir('terraform') {
+                    sh """
+                        sed -i "s|ACCESSKEY|${env.ACCESS_KEY}|g" terraform/input.tf
+                        sed -i "s|SECRETKEY|${env.SECRET_KEY}|g" terraform/input.tf
+                    """
                     sh 'terraform destroy --auto-approve'
                 }
             }
         }
-   }
-   post {
+    }
+
+    post {
         always {
             archiveArtifacts artifacts: 'output.txt', allowEmptyArchive: true
         }
     }
-
 }
