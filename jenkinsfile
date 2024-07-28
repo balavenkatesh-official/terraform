@@ -14,7 +14,7 @@ pipeline {
                 sh 'ls -la'
             }
         }
-    }
+    
 
         stage('Generate SSH Key') {
             steps {
@@ -31,4 +31,5 @@ pipeline {
                 }
             }
         }    
+}
 }
