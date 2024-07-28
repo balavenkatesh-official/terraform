@@ -24,7 +24,7 @@ pipeline {
                         ssh-keygen -t rsa -b 4096 -C "" -N '' -f ${project_name}
                         value=\$(cat ${project_name}.pub)
                         echo \${value}
-                        sed -i "s|PUBLICKEY|${params.SSH_public_key}|g" terraform/input.tf
+                        sed -i "s|PUBLICKEY|${value}|g" terraform/input.tf
                         mv -v ${project_name} ${project_name}.pem
                         chmod -R 400 ${project_name}.pem
                     """
