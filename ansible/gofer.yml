@@ -6,30 +6,65 @@
   become_method: sudo
   gather_facts: false
   tasks:
+    - name: yum update
+      yum:
+        name: "*"
+        state: latest
+
     - name: httpd package installation
       yum:
         name: httpd
         state: present
+
     - name: starting httpd services
       service:
         name: httpd
         state: started
         enabled: yes
 
-    - name: Php Installation
-      become: true
-      shell: |
-         sed -i -e '/enabled/s/1/0/' /etc/yum/pluginconf.d/priorities.conf
-         yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm -y
-         yum install http://rpms.remirepo.net/enterprise/remi-release-7.rpm -y
-         yum-config-manager --enable remi-php73
-         yum install php php-sodium php-mbstring php-dom php-pear php-gettext php-bcmath php-json php-xml php-zip php-imap php-mysqlnd php-soap php-mcrypt php-cli php-gd php-curl php-mysql php-ldap php-zip php-fileinfo -y
-         php -v
-   
-      register: SEQOUT
+    - name: Install Amazon Linux Extras repository
+      yum:
+        name: amazon-linux-extras
+        state: present
 
-    - debug: msg={{SEQOUT.stdout_lines}}
-    
+    - name: Enable PHP 8.0
+      command: amazon-linux-extras enable php8.0
+      args:
+        creates: /etc/amazon-linux-extras-enabled.d/php8.0
+
+    - name: Install PHP 8 and common extensions
+      yum:
+        name:
+          - php
+          - php-cli
+          - php-sodium
+          - php-dom
+          - php-pear
+          - php-gettext
+          - php-bcmath
+          - php-common
+          - php-fpm
+          - php-json
+          - php-mbstring
+          - php-mysqlnd
+          - php-mysql
+          # - php-mcrypt
+          - php-xml
+          - php-zip
+          # - php-imap
+          - php-soap
+          - php-gd
+          - php-curl
+          - php-ldap
+          - php-fileinfo
+        state: present
+
+    - name: Start and enable php-fpm service
+      service:
+        name: php-fpm
+        state: started
+        enabled: yes
+
     - name: Mysql Installation
       become: true
       shell: |
@@ -52,69 +87,69 @@
     - name: Web Installation
       become: true
       shell: |
-         cd /var/www/html
-         wget SOURCELINK
-         unzip * && rm -rf *dl=0
-         mv -v * .. && cd ..
-         rm -rf html && mv -v gofer* html 
+        #  cd /var/www/html
+        #  wget SOURCELINK
+        #  unzip * && rm -rf *dl=0
+        #  mv -v * .. && cd ..
+        #  rm -rf html && mv -v gofer* html 
          
-         cd /var/www/html && > .env
-         cat << EOF >> .env
-         DB_HOST=127.0.0.1
-         DB_DATABASE=DATUM
-         DB_USERNAME=root
-         DB_PASSWORD=uisdhnfuiewFEwohsdEW
-         APP_ENV=local
-         APP_DEBUG=true
-         FIREBASE_PREFIX=Demo
-         APP_LOG_LEVEL=debug
-         SESSION_DRIIVER=file
-         JWT_SECRET=rpostx94CbCDVyLfuEpqaqVrDceelHh6o4Qy4kmBQ18nrQmIWZsLwU31XFOAZq9k
-         EOF
+        #  cd /var/www/html && > .env
+        #  cat << EOF >> .env
+        #  DB_HOST=127.0.0.1
+        #  DB_DATABASE=DATUM
+        #  DB_USERNAME=root
+        #  DB_PASSWORD=uisdhnfuiewFEwohsdEW
+        #  APP_ENV=local
+        #  APP_DEBUG=true
+        #  FIREBASE_PREFIX=Demo
+        #  APP_LOG_LEVEL=debug
+        #  SESSION_DRIIVER=file
+        #  JWT_SECRET=rpostx94CbCDVyLfuEpqaqVrDceelHh6o4Qy4kmBQ18nrQmIWZsLwU31XFOAZq9k
+        #  EOF
          
-         touch /var/www/html/public/.htaccess
-         cat << EOF >> /var/www/html/public/.htaccess
-         <IfModule mod_rewrite.c>
-         <IfModule mod_negotiation.c>
-         Options -MultiViews -Indexes
-         </IfModule>
+        #  touch /var/www/html/public/.htaccess
+        #  cat << EOF >> /var/www/html/public/.htaccess
+        #  <IfModule mod_rewrite.c>
+        #  <IfModule mod_negotiation.c>
+        #  Options -MultiViews -Indexes
+        #  </IfModule>
 
-         RewriteEngine On
+        #  RewriteEngine On
 
-         # Handle Authorization Header
-         RewriteCond %{HTTP:Authorization} .
-         RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+        #  # Handle Authorization Header
+        #  RewriteCond %{HTTP:Authorization} .
+        #  RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-         # Redirect Trailing Slashes If Not A Folder...
-         RewriteCond %{REQUEST_FILENAME} !-d
-         RewriteCond %{REQUEST_URI} (.+)/$
-         RewriteRule ^ %1 [L,R=301]
+        #  # Redirect Trailing Slashes If Not A Folder...
+        #  RewriteCond %{REQUEST_FILENAME} !-d
+        #  RewriteCond %{REQUEST_URI} (.+)/$
+        #  RewriteRule ^ %1 [L,R=301]
 
-         # Handle Front Controller...
-         RewriteCond %{REQUEST_FILENAME} !-d
-         RewriteCond %{REQUEST_FILENAME} !-f
-         RewriteRule ^ index.php [L]
-         </IfModule>
-         EOF
+        #  # Handle Front Controller...
+        #  RewriteCond %{REQUEST_FILENAME} !-d
+        #  RewriteCond %{REQUEST_FILENAME} !-f
+        #  RewriteRule ^ index.php [L]
+        #  </IfModule>
+        #  EOF
 
-         cd /var/www/html
-         mkdir /var/www/html/storage/logs
-         touch /var/www/html/storage/logs/laravel.log
-         touch /var/www/html/storage/installed
-         rm -rvf /var/www/html/public/storage
+        #  cd /var/www/html
+        #  mkdir /var/www/html/storage/logs
+        #  touch /var/www/html/storage/logs/laravel.log
+        #  touch /var/www/html/storage/installed
+        #  rm -rvf /var/www/html/public/storage
 
-         chmod -Rf 777 /var/www/html/storage
-         chmod -Rf 777 /var/www/html/bootstrap/cache
-         chmod -R 777 /var/www/html
+        #  chmod -Rf 777 /var/www/html/storage
+        #  chmod -Rf 777 /var/www/html/bootstrap/cache
+        #  chmod -R 777 /var/www/html
 
-         php artisan migrate:fresh --path=/database/migrations/* --seed
-         php artisan storage:link
+        #  php artisan migrate:fresh --path=/database/migrations/* --seed
+        #  php artisan storage:link
 
          cat << EOF >> /etc/httpd/conf/httpd.conf
          <VirtualHost *:80>
-         ServerName IPADRESS
-         DocumentRoot /var/www/html/public
-         <Directory /var/www/html/public>
+         ServerName 3.210.194.149
+         DocumentRoot /var/www/html/
+         <Directory /var/www/html/>
          Options Indexes FollowSymLinks MultiViews
          AllowOverride All
          Order allow,deny

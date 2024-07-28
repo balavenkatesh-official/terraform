@@ -15,92 +15,105 @@ pipeline {
     }
 
     stages {
-        stage('Prepare Workspace') {
-            when {
-                expression { !params.DESTROY_INFRA }
-            }
+           stage('Ensure .env File') {
             steps {
-                sh 'ls -la'
+                script {
+                    writeFile file: '.env', text: """
+                        ACCESS_KEY=${params.Access_key}
+                        SECRET_KEY=${params.Secret_key}
+                        PROJECT_NAME=${params.project_name}
+                    """
+                    def envContent = readFile '.env'
+                    echo "Contents of .env file:\n${envContent}"
+                }
             }
         }
+    //     stage('Prepare Workspace') {
+    //         when {
+    //             expression { !params.DESTROY_INFRA }
+    //         }
+    //         steps {
+    //             sh 'ls -la'
+    //         }
+    //     }
     
-        stage('Generate SSH Key') {
-            when {
-                expression { !params.DESTROY_INFRA }
-            }
-            steps {
-                script {
-                    def project_name = env.PROJECT_NAME
-                    sh """
-                        ssh-keygen -t rsa -b 4096 -C "" -N '' -f ${project_name}
-                        mv -v ${project_name} ${project_name}.pem
-                        chmod -R 400 ${project_name}.pem
-                    """
-                    def value = sh(script: "cat ${project_name}.pub", returnStdout: true).trim()
-                    sh """
-                        sed -i "s|PUBLICKEY|${value}|g" terraform/input.tf
-                    """
-                }
-            }
-        }
+    //     stage('Generate SSH Key') {
+    //         when {
+    //             expression { !params.DESTROY_INFRA }
+    //         }
+    //         steps {
+    //             script {
+    //                 def project_name = env.PROJECT_NAME
+    //                 sh """
+    //                     ssh-keygen -t rsa -b 4096 -C "" -N '' -f ${project_name}
+    //                     mv -v ${project_name} ${project_name}.pem
+    //                     chmod -R 400 ${project_name}.pem
+    //                 """
+    //                 def value = sh(script: "cat ${project_name}.pub", returnStdout: true).trim()
+    //                 sh """
+    //                     sed -i "s|PUBLICKEY|${value}|g" terraform/input.tf
+    //                 """
+    //             }
+    //         }
+    //     }
 
-        stage('Replace Variables') {
-            when {
-                expression { !params.DESTROY_INFRA }
-            }
-            steps {
-                script {
-                    sh """
-                        sed -i "s|ACCESSKEY|${env.ACCESS_KEY}|g" terraform/input.tf
-                        sed -i "s|SECRETKEY|${env.SECRET_KEY}|g" terraform/input.tf
-                    """
-                }
-            }
-        }
+    //     stage('Replace Variables') {
+    //         when {
+    //             expression { !params.DESTROY_INFRA }
+    //         }
+    //         steps {
+    //             script {
+    //                 sh """
+    //                     sed -i "s|ACCESSKEY|${env.ACCESS_KEY}|g" terraform/input.tf
+    //                     sed -i "s|SECRETKEY|${env.SECRET_KEY}|g" terraform/input.tf
+    //                 """
+    //             }
+    //         }
+    //     }
 
-        stage('Terraform Init and Apply') {
-            when {
-                expression { !params.DESTROY_INFRA }
-            }
-            steps {
-                dir('terraform') {
-                    sh 'terraform init'
-                    sh 'terraform apply --auto-approve'
-                }
-            }
-        }
+    //     stage('Terraform Init and Apply') {
+    //         when {
+    //             expression { !params.DESTROY_INFRA }
+    //         }
+    //         steps {
+    //             dir('terraform') {
+    //                 sh 'terraform init'
+    //                 sh 'terraform apply --auto-approve'
+    //             }
+    //         }
+    //     }
 
-        stage('Save Outputs') {
-            when {
-                expression { !params.DESTROY_INFRA }
-            }
-            steps {
-                dir('terraform') {
-                    sh 'terraform output > output.txt'
-                    sh 'mv -v output.txt ..'
-                }
-            }
-        }
+    //     stage('Save Outputs') {
+    //         when {
+    //             expression { !params.DESTROY_INFRA }
+    //         }
+    //         steps {
+    //             dir('terraform') {
+    //                 sh 'terraform output > output.txt'
+    //                 sh 'mv -v output.txt ..'
+    //             }
+    //         }
+    //     }
 
-        stage('Terraform Destroy') {
-            when {
-                expression { params.DESTROY_INFRA }
-            }
-            steps {
-                dir('terraform') {
-                    sh """
-                        sed -i "s|ACCESSKEY|${env.ACCESS_KEY}|g" terraform/input.tf
-                        sed -i "s|SECRETKEY|${env.SECRET_KEY}|g" terraform/input.tf
-                    """
-                    sh 'terraform destroy --auto-approve'
-                }
-            }
-        }
-    }
+    //     stage('Terraform Destroy') {
+    //         when {
+    //             expression { params.DESTROY_INFRA }
+    //         }
+    //         steps {
+    //             dir('terraform') {
+    //                 sh """
+    //                     sed -i "s|ACCESSKEY|${env.ACCESS_KEY}|g" terraform/input.tf
+    //                     sed -i "s|SECRETKEY|${env.SECRET_KEY}|g" terraform/input.tf
+    //                 """
+    //                 sh 'terraform destroy --auto-approve'
+    //             }
+    //         }
+    //     }
+    // }
 
-    post {
-        always {
-            archiveArtifacts artifacts: 'output.txt', allowEmptyArchive: true
-        }
-    }
+    // post {
+    //     always {
+    //         archiveArtifacts artifacts: 'output.txt', allowEmptyArchive: true
+    //     }
+     }
 }
