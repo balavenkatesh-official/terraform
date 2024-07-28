@@ -10,6 +10,9 @@ pipeline {
 
     stages {
         stage('Prepare Workspace') {
+            when {
+                expression { !params.DESTROY_INFRA }
+            }
             steps {
                 sh 'ls -la'
             }
@@ -17,6 +20,9 @@ pipeline {
     
 
         stage('Generate SSH Key') {
+            when {
+                expression { !params.DESTROY_INFRA }
+            }
             steps {
                 script {
                     def project_name = params.project_name
@@ -34,6 +40,9 @@ pipeline {
         }
 
         stage('Replace Variables') {
+            when {
+                expression { !params.DESTROY_INFRA }
+            }
             steps {
                 script {
                     sh """
@@ -45,6 +54,9 @@ pipeline {
         }
 
         stage('Terraform Init and Apply') {
+            when {
+                expression { !params.DESTROY_INFRA }
+            }
             steps {
                 dir('terraform') {
                     sh 'terraform init'
@@ -54,6 +66,9 @@ pipeline {
         }
 
         stage('Save Outputs') {
+            when {
+                expression { !params.DESTROY_INFRA }
+            }
             steps {
                 dir('terraform') {
                     sh 'terraform output > output.txt'
