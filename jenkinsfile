@@ -95,21 +95,21 @@ pipeline {
     //         }
     //     }
 
-    //     stage('Terraform Destroy') {
-    //         when {
-    //             expression { params.DESTROY_INFRA }
-    //         }
-    //         steps {
-    //             dir('terraform') {
-    //                 sh """
-    //                     sed -i "s|ACCESSKEY|${env.ACCESS_KEY}|g" terraform/input.tf
-    //                     sed -i "s|SECRETKEY|${env.SECRET_KEY}|g" terraform/input.tf
-    //                 """
-    //                 sh 'terraform destroy --auto-approve'
-    //             }
-    //         }
-    //     }
-    // }
+        stage('Terraform Destroy') {
+            when {
+                expression { params.DESTROY_INFRA }
+            }
+            steps {
+                dir('terraform') {
+                    sh """
+                        sed -i "s|ACCESSKEY|${env.ACCESS_KEY}|g" terraform/input.tf
+                        sed -i "s|SECRETKEY|${env.SECRET_KEY}|g" terraform/input.tf
+                    """
+                    // sh 'terraform destroy --auto-approve'
+                }
+            }
+        }
+    }
 
     // post {
     //     always {
