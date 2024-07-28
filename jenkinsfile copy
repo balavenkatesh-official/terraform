@@ -4,7 +4,7 @@ pipeline {
     parameters {
         string(name: 'Access_key', defaultValue: '', description: 'AWS Access Key')
         string(name: 'Secret_key', defaultValue: '', description: 'AWS Secret Key')
-        string(name: 'project_name', defaultValue: '', description: 'Project Name')
+        string(name: 'project_name', defaultValue: '', description: 'Project_name')
         booleanParam(name: 'DESTROY_INFRA', defaultValue: false, description: 'Set to true to destroy the infrastructure')
     }
 
@@ -30,25 +30,25 @@ pipeline {
         }
         stage('Create Credentials File') {
             steps {
-                script {
-                    def accessKey = env.ACCESS_KEY
-                    def secretKey = env.SECRET_KEY
-                    def projectName = env.PROJECT_NAME
-                    sh """
-                        #!/bin/bash
+                sh '''
+                    #!/bin/bash
 
-                        # Create the file and write the values to it
-                        cat <<EOF > credentials.txt
-ACCESS_KEY=${accessKey}
-SECRET_KEY=${secretKey}
-PROJECT_NAME=${projectName}
-EOF
+                    # Define environmental variables
+                    ACCESS_KEY="${ACCESS_KEY}"
+                    SECRET_KEY="${SECRET_KEY}"
+                    PROJECT_NAME="${PROJECT_NAME}"
 
-                        # Display the contents of the file
-                        cat credentials.txt
-                    """
-                }
-            }
+                    # Create the file and write the values to it
+                    cat <<EOF > credentials.txt
+                    ACCESS_KEY=${ACCESS_KEY}
+                    SECRET_KEY=${SECRET_KEY}
+                    PROJECT_NAME=${PROJECT_NAME}
+                    EOF
+
+                    # Display the contents of the file
+                    cat credentials.txt
+                '''
+               }
         }
         stage('Prepare Workspace') {
             when {
@@ -123,28 +123,28 @@ EOF
             }
             steps {
                 dir('terraform') {
-                    script {
-                        def accessKey = env.ACCESS_KEY
-                        def secretKey = env.SECRET_KEY
-                        sh """
-                            #!/bin/bash
+                    sh '''
+                        #!/bin/bash
 
-                            # Use sed to replace placeholders in the input.tf file
-                            sed -i "s|ACCESSKEY|${accessKey}|g" input.tf
-                            sed -i "s|SECRETKEY|${secretKey}|g" input.tf
+                        # Define environmental variables
+                        ACCESS_KEY="${ACCESS_KEY}"
+                        SECRET_KEY="${SECRET_KEY}"
 
-                            # Destroy the Terraform infrastructure
-                            terraform destroy --auto-approve
-                        """
-                    }
+                        # Use sed to replace placeholders in the input.tf file
+                        sed -i "s|ACCESSKEY|${ACCESS_KEY}|g" input.tf
+                        sed -i "s|SECRETKEY|${SECRET_KEY}|g" input.tf
+
+                        # Destroy the Terraform infrastructure
+                        terraform destroy --auto-approve
+                    '''
                 }
             }
         }
     }
 
-    post {
+     post {
         always {
             archiveArtifacts artifacts: 'output.txt', allowEmptyArchive: true
         }
-    }
+     }
 }
