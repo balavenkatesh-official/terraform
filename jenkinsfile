@@ -15,47 +15,6 @@ pipeline {
     }
 
     stages {
-        stage('Ensure .env File') {
-            when {
-                expression { !params.DESTROY_INFRA }
-            }
-            steps {
-                script {
-                    writeFile file: '.env', text: """
-                        ACCESS_KEY=${params.Access_key}
-                        SECRET_KEY=${params.Secret_key}
-                        PROJECT_NAME=${params.project_name}
-                    """
-                    def envContent = readFile '.env'
-                    echo "Contents of .env file:\n${envContent}"
-                }
-            }
-        }
-        stage('Create Credentials File') {
-            when {
-                expression { !params.DESTROY_INFRA }
-            }
-            steps {
-                script {
-                    def accessKey = env.ACCESS_KEY
-                    def secretKey = env.SECRET_KEY
-                    def projectName = env.PROJECT_NAME
-                    sh """
-                        #!/bin/bash
-
-                        # Create the file and write the values to it
-                        cat <<EOF > credentials.txt
-ACCESS_KEY=${accessKey}
-SECRET_KEY=${secretKey}
-PROJECT_NAME=${projectName}
-EOF
-
-                        # Display the contents of the file
-                        cat credentials.txt
-                    """
-                }
-            }
-        }
         stage('Prepare Workspace') {
             when {
                 expression { !params.DESTROY_INFRA }
