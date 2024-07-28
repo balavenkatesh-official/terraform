@@ -22,11 +22,12 @@ pipeline {
                     def project_name = params.project_name
                     sh """
                         ssh-keygen -t rsa -b 4096 -C "" -N '' -f ${project_name}
-                        value=\$(cat ${project_name}.pub)
-                        echo \${value}
-                        sed -i "s|PUBLICKEY|${value}|g" terraform/input.tf
                         mv -v ${project_name} ${project_name}.pem
                         chmod -R 400 ${project_name}.pem
+                    """
+                    def value = sh(script: "cat ${project_name}.pub", returnStdout: true).trim()
+                    sh """
+                        sed -i "s|PUBLICKEY|${value}|g" terraform/input.tf
                     """
                 }
             }
