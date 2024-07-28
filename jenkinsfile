@@ -111,9 +111,9 @@ pipeline {
         }
     }
 
-    // post {
-    //     always {
-    //         archiveArtifacts artifacts: 'output.txt', allowEmptyArchive: true
-    //     }
+     post {
+        always {
+            archiveArtifacts artifacts: 'output.txt', allowEmptyArchive: true
+        }
      }
-//}
+}
