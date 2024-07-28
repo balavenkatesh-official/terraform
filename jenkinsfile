@@ -30,6 +30,17 @@ pipeline {
                     """
                 }
             }
-        }    
+        }
+
+        stage('Replace Variables') {
+            steps {
+                script {
+                    sh """
+                        sed -i "s|ACCESSKEY|${params.Access_key}|g" terraform/input.tf
+                        sed -i "s|SECRETKEY|${params.Secret_key}|g" terraform/input.tf
+                    """
+                }
+            }
+        }            
 }
 }
