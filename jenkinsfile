@@ -1,0 +1,18 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'Access_key', defaultValue: '', description: 'AWS Access Key')
+        string(name: 'Secret_key', defaultValue: '', description: 'AWS Secret Key')
+        string(name: 'project_name', defaultValue: '', description: 'Project_name')
+        booleanParam(name: 'DESTROY_INFRA', defaultValue: false, description: 'Set to true to destroy the infrastructure')
+    }
+
+    stages {
+        stage('Prepare Workspace') {
+            steps {
+                sh 'chmod -R 777 /var/lib/jenkins/workspace/website-automation'
+            }
+        }
+    }
+}
