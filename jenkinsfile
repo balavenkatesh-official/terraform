@@ -16,6 +16,9 @@ pipeline {
 
     stages {
         stage('Ensure .env File') {
+            when {
+                expression { !params.DESTROY_INFRA }
+            }
             steps {
                 script {
                     writeFile file: '.env', text: """
@@ -29,6 +32,9 @@ pipeline {
             }
         }
         stage('Create Credentials File') {
+            when {
+                expression { !params.DESTROY_INFRA }
+            }
             steps {
                 script {
                     def accessKey = env.ACCESS_KEY
