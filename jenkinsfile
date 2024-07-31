@@ -88,8 +88,10 @@ pipeline {
             steps {
                 script {
                     def ip = sh(script: "grep 'vm_public_ip' output.txt | cut -d '\"' -f 2", returnStdout: true).trim()
+                    def pemFile = "${env.WORKSPACE}/${env.PROJECT_NAME}.pem"
                     sh """
                         sed -i "s|IPADDRESS|${ip}|g" ansible/inventory.yml
+                        sed -i "s|ansible_ssh_private_key_file: .*|ansible_ssh_private_key_file: ${pemFile}|g" ansible/inventory.yml
                         sed -i "s|ipaddress: IPADDRESS|ipaddress: ${ip}|g" ansible/group_vars/all
                     """
                 }
