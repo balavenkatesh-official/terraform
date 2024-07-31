@@ -22,7 +22,9 @@
         <li>Apache2</li>
         <li>MySQL 8.0</li>
         <li>PHP 8.0 with its modules</li>
-        <li>Deploy Node project with port 3000</li>
+        <li>Deploy Node project with port [ 3000 ]
+        https://github.com/balavenkatesh-official/nodejs-crud-project.git
+        </li>
         <li>Configure vhost and make the site live</li>
     </ul>
 </body>
