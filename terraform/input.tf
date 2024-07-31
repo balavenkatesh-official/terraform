@@ -18,7 +18,7 @@ variable "region" {
 variable "ami" {
   type        = string
   description = "aws ami used to provision the VM"
-  default     = "ami-0022f774911c1d690"
+  default     = "ami-0a0e5d9c7acc336f1"
 }
 
 variable "instance_ssh_public_key" {
