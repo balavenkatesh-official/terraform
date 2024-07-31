@@ -98,6 +98,17 @@ pipeline {
             }
         }
 
+        stage('Run Ansible Playbook') {
+            when {
+                expression { !params.DESTROY_INFRA }
+            }
+            steps {
+                dir('ansible') {
+                    sh 'ansible-playbook -i inventory.yml gofer.yml -vv'
+                }
+            }
+        }
+
         stage('Terraform Destroy') {
             when {
                 expression { params.DESTROY_INFRA }
