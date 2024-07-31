@@ -6,160 +6,300 @@
   become_method: sudo
   gather_facts: false
   tasks:
-    - name: yum update
-      yum:
+  ############# Install and start the httpd service ###############################
+    - name: apt update
+      apt:
         name: "*"
         state: latest
+      tags: update
 
-    - name: httpd package installation
-      yum:
-        name: httpd
+    - name: Update apt package cache
+      apt:
+        update_cache: yes  
+      tags: cache
+
+    - name: apache2 package installation
+      apt:
+        name: apache2
         state: present
+      tags: apache2
 
-    - name: starting httpd services
+    - name: starting apache2 services
       service:
-        name: httpd
+        name: apache2
         state: started
         enabled: yes
+      tags: apache2
 
-    - name: Install Amazon Linux Extras repository
-      yum:
-        name: amazon-linux-extras
-        state: present
+  ############# Install and start the php-8.0 service ############################### 
+   
+    # - name: Install Amazon Linux Extras repository
+    #   yum:
+    #     name: amazon-linux-extras
+    #     state: present
+    #   tags: amazon_linux_extras
 
-    - name: Enable PHP 8.0
-      command: amazon-linux-extras enable php8.0
-      args:
-        creates: /etc/amazon-linux-extras-enabled.d/php8.0
+    # - name: Enable PHP 8.0
+    #   command: amazon-linux-extras enable php8.0
+    #   args:
+    #     creates: /etc/amazon-linux-extras-enabled.d/php8.0
+    #   tags: php
+    #Install php8.1
+    
+    - name: install software packages
+      command: apt install software-properties-common
+     
+    - name: Add repository ppa:ondrej/php
+      apt_repository:
+        repo="ppa:ondrej/php" state=present       
+      
+    - name: Updating the repo
+      apt: update_cache=yes
 
-    - name: Install PHP 8 and common extensions
-      yum:
-        name:
-          - php
-          - php-cli
-          - php-sodium
-          - php-dom
-          - php-pear
-          - php-gettext
-          - php-bcmath
-          - php-common
-          - php-fpm
-          - php-json
-          - php-mbstring
-          - php-mysqlnd
-          - php-mysql
-          # - php-mcrypt
-          - php-xml
-          - php-zip
-          # - php-imap
-          - php-soap
-          - php-gd
-          - php-curl
-          - php-ldap
-          - php-fileinfo
-        state: present
+    - name: installing php8.1
+      apt: name=php8.1 state=present
 
-    - name: Start and enable php-fpm service
+    # - name: Install PHP 8 and common extensions
+    #   apt:
+    #     name:
+    #       - php8.1
+    #       - php8.1-cli
+    #     #  - php8.1-sodium
+    #       - php8.1-dom
+    #     #  - php8.1-pear
+    #       - php8.1-gettext
+    #       - php8.1-bcmath
+    #       - php8.1-common
+    #       - php8.1-fpm
+    #       - php8.1-json
+    #       - php8.1-mbstring
+    #       - php8.1-mysqlnd
+    #       - php8.1-xml
+    #       - php8.1-zip
+    #       - php8.1-soap
+    #       - php8.1-gd
+    #       - php8.1-curl
+    #       - php8.1-ldap
+    #       - php8.1-fileinfo
+    #     state: present
+    #   tags: php
+
+    - name: install php extensions
+      become: true
+      shell: |
+         sudo apt-get install -y php8.1-cli php8.1-common php8.1-mysql php8.1-zip php8.1-gd php8.1-mbstring php8.1-curl php8.1-xml php8.1-bcmath
+         php -m  
+       
+      tags: php
+
+    # - name: Start and enable php-fpm service
+    #   service:
+    #     name: php8.1-fpm
+    #     state: started
+    #     enabled: yes
+    #   tags: php
+
+############# Install and start the MYSQL-8.0 service ############################### 
+
+    - name: Installing Mysql and dependencies
+      package:
+         name: "{{item}}"
+         state: present
+         update_cache: yes
+      loop:
+        - mysql-server
+        - mysql-client
+        - python3-mysqldb
+        - libmysqlclient-dev
+      become: yes
+      tags: mysql
+       
+    - name: start and enable mysql service
       service:
-        name: php-fpm
-        state: started
-        enabled: yes
+         name: mysql
+         state: started
+         enabled: yes
+      tags: mysql
 
-    - name: Mysql Installation
+    - name: creating mysql user (medium_post)
+      mysql_user:
+         name: "{{db_user}}"
+         password: "{{db_pass}}"
+         priv: '*.*:ALL'
+         host: '%'
+         state: present
+      tags: mysql
+
+    - name: creating medium_db 
+      mysql_db:
+         name: "{{db_name}}"
+         state: present
+      tags: mysql
+
+    # - name: Enable remote login to mysql
+    #   lineinfile:
+    #      path: /etc/mysql/mysql.conf.d/mysqld.cnf
+    #      regexp: '^bind-address'
+    #      line: 'bind-address = 0.0.0.0'
+    #      backup: yes
+    #   # notify:
+    #   #   - Restart mysql
+    #   tags: mysql
+
+    - name: mysql service restart
       become: true
       shell: |
-         a=uisdhnfuiewFEwohsdEW 
-         d=DATUM
-         rpm -Uvh http://repo.mysql.com/mysql-community-release-el7-5.noarch.rpm 
-         sudo rpm -ivh mysql-community-release-el7-5.noarch.rpm
-         yum install mysql mysql-server -y
-         systemctl start mysqld
-         systemctl enable mysqld
-         echo "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('$a');" > reset_pass.sql
-         mysql -u root < reset_pass.sql
-         echo "Database creation"
-         mysql --host localhost -uroot -p${a} -e "CREATE DATABASE $d;"
+        service mysql restart
+      tags: mysql  
 
-      register: SEQOUT
+    - name: Creating users table
+      shell: |
+        mysql -u{{ db_user }} -p{{ db_pass }} {{ db_name }} <<EOF
+        CREATE TABLE users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL
+        );
+        EOF
+      tags: mysql
 
-    - debug: msg={{SEQOUT.stdout_lines}}
-
-    - name: Web Installation
+    - name: mysql service restart
       become: true
       shell: |
-        #  cd /var/www/html
-        #  wget SOURCELINK
-        #  unzip * && rm -rf *dl=0
-        #  mv -v * .. && cd ..
-        #  rm -rf html && mv -v gofer* html 
-         
-        #  cd /var/www/html && > .env
-        #  cat << EOF >> .env
-        #  DB_HOST=127.0.0.1
-        #  DB_DATABASE=DATUM
-        #  DB_USERNAME=root
-        #  DB_PASSWORD=uisdhnfuiewFEwohsdEW
-        #  APP_ENV=local
-        #  APP_DEBUG=true
-        #  FIREBASE_PREFIX=Demo
-        #  APP_LOG_LEVEL=debug
-        #  SESSION_DRIIVER=file
-        #  JWT_SECRET=rpostx94CbCDVyLfuEpqaqVrDceelHh6o4Qy4kmBQ18nrQmIWZsLwU31XFOAZq9k
-        #  EOF
-         
-        #  touch /var/www/html/public/.htaccess
-        #  cat << EOF >> /var/www/html/public/.htaccess
-        #  <IfModule mod_rewrite.c>
-        #  <IfModule mod_negotiation.c>
-        #  Options -MultiViews -Indexes
-        #  </IfModule>
+        service mysql restart
+      tags: mysql 
 
-        #  RewriteEngine On
+  # handlers:
+  #   - name: Restart mysql
+  #     service:
+  #       name: mysql
+  #       state: restarted
+  #     tags: mysql
 
-        #  # Handle Authorization Header
-        #  RewriteCond %{HTTP:Authorization} .
-        #  RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    - name: Debug output
+      debug:
+        msg: "MySQL setup is complete"
+      tags: mysql
+    
+    - name: Debug before web installation
+      debug:
+        msg: "Before web installation"
+      tags: before
+    
+    - name: npm Installation
+      become: true
+      shell: |
+        cd ~
+        curl -sL https://deb.nodesource.com/setup_18.x -o /tmp/nodesource_setup.sh
+        bash /tmp/nodesource_setup.sh
+        apt install npm -y
+        apt install nodejs -y
+      tags: npm
 
-        #  # Redirect Trailing Slashes If Not A Folder...
-        #  RewriteCond %{REQUEST_FILENAME} !-d
-        #  RewriteCond %{REQUEST_URI} (.+)/$
-        #  RewriteRule ^ %1 [L,R=301]
+    - name: nvm installation
+      become: true
+      shell: |    
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+        nvm install v18
+        nvm use v18
+      tags: nvm
 
-        #  # Handle Front Controller...
-        #  RewriteCond %{REQUEST_FILENAME} !-d
-        #  RewriteCond %{REQUEST_FILENAME} !-f
-        #  RewriteRule ^ index.php [L]
-        #  </IfModule>
-        #  EOF
+    - name: website-setup
+      become: true
+      shell: |
+        apt install git -y
+        cd /var/www/html
+        git clone https://github.com/balavenkatesh-official/nodejs-crud-project.git
+        mv -v * .. && cd ..
+        rm -rf html && mv -v nodejs* html 
+        cd /var/www/html/backend
+        npm init -y
+        npm install express mysql body-parser
+        npm install -g pm2
+        pm2 start app.js --name crud-demo
+        pm2 list
+        pm2 startup
+        pm2 save
 
-        #  cd /var/www/html
-        #  mkdir /var/www/html/storage/logs
-        #  touch /var/www/html/storage/logs/laravel.log
-        #  touch /var/www/html/storage/installed
-        #  rm -rvf /var/www/html/public/storage
+      tags: website
+      
+    - name: Debug after web installation
+      debug:
+        msg: "After web installation"
+      tags: finish
 
-        #  chmod -Rf 777 /var/www/html/storage
-        #  chmod -Rf 777 /var/www/html/bootstrap/cache
-        #  chmod -R 777 /var/www/html
+  #   # - name: Mysql Installation
+  #   #   become: true
+  #   #   shell: |
+  #   #      a=uisdhnfuiewFEwohsdEW 
+  #   #      d=DATUM
+  #   #      rpm -Uvh http://repo.mysql.com/mysql-community-release-el7-5.noarch.rpm 
+  #   #      sudo rpm -ivh mysql-community-release-el7-5.noarch.rpm
+  #   #      yum install mysql mysql-server -y
+  #   #      systemctl start mysqld
+  #   #      systemctl enable mysqld
+  #   #      echo "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('$a');" > reset_pass.sql
+  #   #      mysql -u root < reset_pass.sql
+  #   #      echo "Database creation"
+  #   #      mysql --host localhost -uroot -p${a} -e "CREATE DATABASE $d;"
+  #   #   tags: mysql
+  #   #   register: SEQOUT
 
-        #  php artisan migrate:fresh --path=/database/migrations/* --seed
-        #  php artisan storage:link
+  #   # - debug: msg={{SEQOUT.stdout_lines}}
+    - name: vhost setup
+      become: true
+      shell: |
+         cat << EOF >> /etc/apache2/sites-available/000-default.conf
 
-         cat << EOF >> /etc/httpd/conf/httpd.conf
+
          <VirtualHost *:80>
-         ServerName 3.210.194.149
+         ServerName {{ipaddress}}
          DocumentRoot /var/www/html/
-         <Directory /var/www/html/>
-         Options Indexes FollowSymLinks MultiViews
-         AllowOverride All
-         Order allow,deny
-         allow from all
+         <Directory /var/www/html>
+              Options Indexes FollowSymLinks
+              AllowOverride All
+              Require all granted
          </Directory>
+
+          # Proxy setup for API requests to backend
+          ProxyPreserveHost On
+          ProxyPass /users http://localhost:3000/users
+          ProxyPassReverse /users http://localhost:3000/users
+
+          ErrorLog /var/log/apache2/example.com-error.log
+          CustomLog /var/log/apache2/example.com-access.log combined
          </VirtualHost>
          EOF
-         service httpd restart
-    
+
+         a2enmod rewrite
+         a2enmod proxy
+         a2enmod proxy_http
+         systemctl restart apache2
+
+        #  <VirtualHost *:80>
+        #  ServerName {{ipaddress}}
+        #  DocumentRoot /var/www/html/
+        #  <Directory /var/www/html/>
+        #  Options Indexes FollowSymLinks MultiViews
+        #  AllowOverride All
+        #  Order allow,deny
+        #  allow from all
+        #  </Directory>
+        #  </VirtualHost>
+        #  EOF
+        #  a2enmod rewrite
+        #  service apache2 restart
+
+      tags: vhost
       register: SEQOUT
+    
+    - name: checking the ansible-valut
+      debug:
+        msg: "{{msg}}"
+      tags: vault  
 
     - debug: msg={{SEQOUT.stdout_lines}}
 ...
