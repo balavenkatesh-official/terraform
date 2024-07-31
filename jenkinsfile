@@ -76,8 +76,22 @@ pipeline {
             }
             steps {
                 dir('terraform') {
-                    sh 'terraform output > output.txt'
-                    sh 'mv -v output.txt ..'
+                    sh 'terraform output > ../output.txt'
+                }
+            }
+        }
+
+        stage('Update Ansible Inventory and Group Vars') {
+            when {
+                expression { !params.DESTROY_INFRA }
+            }
+            steps {
+                script {
+                    def ip = sh(script: "grep 'vm_public_ip' output.txt | cut -d '\"' -f 2", returnStdout: true).trim()
+                    sh """
+                        sed -i "s|IPADDRESS|${ip}|g" ansible/inventory.yml
+                        sed -i "s|ipaddress: IPADDRESS|ipaddress: ${ip}|g" ansible/group_vars/all
+                    """
                 }
             }
         }

@@ -1,6 +1,6 @@
 all:
   hosts:
-    54.175.187.64:
+    IPADDRESS:
       ansible_ssh_extra_args: -o StrictHostKeyChecking=no
       ansible_ssh_private_key_file: ../ec2-keypair.pem
       ansible_user: ubuntu
