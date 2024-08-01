@@ -22,10 +22,32 @@
         <li>Apache2</li>
         <li>MySQL 8.0</li>
         <li>PHP 8.0 with its modules</li>
-        <li>Deploy Node project with port [ 3000 ]
+        <li>Deploy Node project with backend port-no [:: 3000 ]
         https://github.com/balavenkatesh-official/nodejs-crud-project.git
         </li>
-        <li>Configure vhost and make the site live</li>
+        <li>crud.js file as a frontend. use the backend path /users 
+        https://github.com/balavenkatesh-official/nodejs-crud-project.git
+        </li>
+        <li> Configure vhost and make the site live 
+                         
+                         <VirtualHost *:80>
+                         ServerName {{ipaddress}}
+                         DocumentRoot /var/www/html/
+                         <Directory /var/www/html>
+                         Options Indexes FollowSymLinks
+                         AllowOverride All
+                         Require all granted
+                         </Directory>
+            
+                          # Proxy setup for API requests to backend
+                          ProxyPreserveHost On
+                          ProxyPass /users http://localhost:3000/users
+                          ProxyPassReverse /users http://localhost:3000/users
+            
+                         ErrorLog /var/log/apache2/example.com-error.log
+                         CustomLog /var/log/apache2/example.com-access.log combined
+                         </VirtualHost>
+</li>        
     </ul>
 </body>
 </html>
